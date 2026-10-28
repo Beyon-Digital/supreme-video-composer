@@ -36,6 +36,7 @@ import {
 } from "@studio/ai-generation";
 import { clearSessionProjects } from "./remotion-app/utils.js";
 import { clearCreateVideoProjectSessions } from "./remotion-app/tools.js";
+import { logToolInvocation, mcpStatsTracker } from "./logging.js";
 
 // ─── Types ───────────────────────────────────────────────────────
 

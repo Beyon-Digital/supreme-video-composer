@@ -4,6 +4,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { createMcpServer } from "./create-server.js";
 import type { HttpServerOptions, McpToolRuntime } from "./runtime.js";
+import { logToolInvocation, mcpStatsTracker } from "./logging.js";
 
 interface Session {
   server: ReturnType<typeof createMcpServer>;
@@ -82,6 +83,8 @@ async function handleRequest(
   sessions: Map<string, Session>,
 ): Promise<void> {
   const requestUrl = new URL(req.url ?? "/", `http://${req.headers.host ?? "localhost"}`);
+  const requestMethod = `${req.method} ${requestUrl.pathname}`;
+  const startTime = Date.now();
 
   if (requestUrl.pathname === "/health" && req.method === "GET") {
     writeJson(res, 200, {
@@ -135,7 +138,30 @@ async function handleRequest(
     session = { server, transport };
   }
 
+  // Log tool calls from MCP requests
+  if (parsedBody && typeof parsedBody === "object" && "method" in parsedBody) {
+    const mcpRequest = parsedBody as { method: string; params?: { name?: string } };
+    const toolName = mcpRequest.params?.name || mcpRequest.method;
+    if (mcpRequest.method === "tools/call") {
+      logToolInvocation({
+        timestamp: new Date().toISOString(),
+        toolName: toolName || "unknown",
+        status: "start",
+      });
+    }
+  }
+
   await session.transport.handleRequest(req, res, parsedBody);
+
+  // Record stats on tool completion
+  if (parsedBody && typeof parsedBody === "object" && "method" in parsedBody) {
+    const mcpRequest = parsedBody as { method: string; params?: { name?: string } };
+    const toolName = mcpRequest.params?.name || mcpRequest.method;
+    if (mcpRequest.method === "tools/call") {
+      const durationMs = Date.now() - startTime;
+      mcpStatsTracker.recordToolCall(toolName || "unknown", durationMs, !res.statusCode || res.statusCode < 400);
+    }
+  }
 
   if (req.method === "DELETE") {
     try {

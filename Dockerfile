@@ -138,6 +138,9 @@ ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV REMOTION_CHROME_EXECUTABLE=/usr/bin/chromium
 ENV CHROME_PATH=/usr/bin/chromium
 ENV PORT=3000
+# Chrome sandbox bypass for Docker environment (dbus not available)
+ENV CHROMIUM_ARGS="--no-sandbox --disable-gpu"
+ENV PUPPETEER_ARGS="--no-sandbox --disable-gpu"
 
 COPY --from=studio-deps --chown=studio:studio /app/node_modules ./node_modules
 COPY --from=studio-builder --chown=studio:studio /app/package.json ./
@@ -158,6 +161,8 @@ FROM runtime-base AS mcp-runner
 
 ENV MCP_HOST=0.0.0.0
 ENV MCP_PORT=9090
+# Logging verbosity for MCP tool usage tracking
+ENV MCP_LOG_LEVEL=info
 
 COPY --from=mcp-deps --chown=studio:studio /app/node_modules ./node_modules
 COPY --from=mcp-builder --chown=studio:studio /app/package.json ./

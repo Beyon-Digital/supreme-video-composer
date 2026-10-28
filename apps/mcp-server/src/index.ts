@@ -12,6 +12,10 @@ async function main() {
   const runtime = createRuntimeFromEnv();
   const transportMode = resolveTransportMode();
 
+  // Log startup configuration
+  console.log(`[mcp] starting with transport mode: ${transportMode}`);
+  console.log(`[mcp] tool usage logging enabled`);
+
   if (transportMode === "http") {
     const options = getHttpServerOptionsFromEnv();
     const httpServer = await startHttpMcpServer(runtime, options);
@@ -19,6 +23,7 @@ async function main() {
     console.log(`[mcp] listening on ${httpServer.url}/mcp`);
     console.log(`[mcp] health endpoint: ${httpServer.url}/health`);
     console.log(`[mcp] backend: ${runtime.studioApi ? "studio-api" : "local"}`);
+    console.log(`[mcp] ready to accept MCP requests`);;
 
     const shutdown = async (signal: string) => {
       console.log(`\n[mcp] received ${signal}, shutting down...`);
